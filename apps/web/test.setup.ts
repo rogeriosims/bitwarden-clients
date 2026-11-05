@@ -1,3 +1,9 @@
+if (!Symbol.dispose) {
+  Symbol.dispose = Symbol("Symbol.dispose");
+}
+if (!Symbol.asyncDispose) {
+  Symbol.asyncDispose = Symbol("Symbol.asyncDispose");
+}
 import "@bitwarden/ui-common/setup-jest";
 
 Object.defineProperty(window, "CSS", { value: null });

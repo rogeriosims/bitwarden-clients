@@ -707,6 +707,13 @@ const routes: Routes = [
         loadChildren: () => VaultModule,
       },
       {
+        path: "certificados-a1",
+        loadComponent: () =>
+          import("./vault/certificados-a1/certificados-a1.component").then(
+            (m) => m.CertificadosA1Component,
+          ),
+      },
+      {
         // A child of the shared user shell, since a second layout instance would re-base the side
         // nav's relative routerLinks.
         path: "pam",
