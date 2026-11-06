@@ -113,10 +113,10 @@ export class CertificadoA1UploadComponent {
   }
 
   handleFile(file: File) {
-    if (file.size > 50 * 1024) {
+    if (file.size > 500 * 1024) {
       this.toastService.showToast({
         title: "Erro",
-        message: "O arquivo excede o limite de 50KB.",
+        message: "O arquivo excede o limite de 500KB.",
         variant: "error",
       });
       return;
@@ -157,6 +157,16 @@ export class CertificadoA1UploadComponent {
         for (const safeBag of safeBags.safeBags) {
           if (safeBag.cert) {
             const cert = safeBag.cert;
+
+            // Verifique se não é um certificado CA
+            const isCA = cert.extensions?.some(
+              (ext: any) => ext.name === "basicConstraints" && ext.cA === true
+            );
+
+            if (isCA) {
+              continue;
+            }
+
             notAfter = cert.validity.notAfter;
             const cnAttr = cert.subject.attributes.find(
               (a: any) => a.shortName === "CN" || a.name === "commonName",
@@ -169,7 +179,7 @@ export class CertificadoA1UploadComponent {
                 cnpj = parts[1];
               }
             }
-            // Break out early if we found the client cert (could have better logic to avoid root certs)
+            // Break out early if we found the client cert
             if (subjectName) break;
           }
         }
