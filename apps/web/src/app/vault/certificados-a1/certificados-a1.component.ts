@@ -1,51 +1,66 @@
 import { Component, ChangeDetectionStrategy, inject, OnInit, signal } from "@angular/core";
 import { CommonModule } from "@angular/common";
-import { I18nPipe } from "@bitwarden/ui-common";
+import { firstValueFrom } from "rxjs";
+
+import { AccountService } from "@bitwarden/common/auth/abstractions/account.service";
+import { getUserId } from "@bitwarden/common/auth/services/account.service";
+import { I18nService } from "@bitwarden/common/platform/abstractions/i18n.service";
+import { CipherService } from "@bitwarden/common/vault/abstractions/cipher.service";
+import { CipherType } from "@bitwarden/common/vault/enums";
+import { FieldType } from "@bitwarden/common/vault/enums/field-type.enum";
+import { CipherView } from "@bitwarden/common/vault/models/view/cipher.view";
+import { FieldView } from "@bitwarden/common/vault/models/view/field.view";
 import {
-  DialogService,
   ButtonModule,
+  DialogService,
   IconModule,
   IconTileComponent,
   ToastService,
 } from "@bitwarden/components";
+import { I18nPipe } from "@bitwarden/ui-common";
+
 import { CertificadoA1UploadComponent } from "./certificado-a1-upload.component";
-import { CipherService } from "@bitwarden/common/vault/abstractions/cipher.service";
-import { CipherFileUploadService } from "@bitwarden/common/vault/abstractions/file-upload/cipher-file-upload.service";
-import { CipherType } from "@bitwarden/common/vault/enums";
-import { Cipher } from "@bitwarden/common/vault/models/domain/cipher";
-import { Login } from "@bitwarden/common/vault/models/domain/login";
-import { Field } from "@bitwarden/common/vault/models/domain/field";
-import { FieldType } from "@bitwarden/common/vault/enums/field-type.enum";
-import { firstValueFrom } from "rxjs";
 
 @Component({
   selector: "app-certificados-a1",
   template: `
     <div class="tw-p-6">
       <div class="tw-flex tw-justify-between tw-items-center tw-mb-6">
-        <h1 class="tw-text-2xl tw-font-semibold">Certificados A1</h1>
-        <button bitButton buttonType="primary" startIcon="bwi-plus" (click)="openAddModal()">
-          Adicionar Certificado A1
+        <h1 class="tw-text-2xl tw-font-semibold tw-text-text-main">
+          {{ "certificadosA1" | i18n }}
+        </h1>
+        <button
+          bitButton
+          buttonType="primary"
+          startIcon="bwi-plus"
+          id="certificados-a1_button_add"
+          (click)="openAddModal()"
+        >
+          {{ "addCertificadoA1" | i18n }}
         </button>
       </div>
 
       @if (ciphers().length === 0) {
-        <div class="tw-text-center tw-py-12 tw-text-secondary-500">
-          <p>Nenhum certificado A1 cadastrado.</p>
+        <div class="tw-text-center tw-py-12 tw-text-text-muted">
+          <p>{{ "noCertificadosA1" | i18n }}</p>
         </div>
       } @else {
         <div class="tw-grid tw-grid-cols-1 md:tw-grid-cols-2 lg:tw-grid-cols-3 tw-gap-4">
           @for (cipher of ciphers(); track cipher.id) {
             <div
-              class="tw-border tw-border-primary-200 tw-rounded-lg tw-p-4 tw-bg-white tw-shadow-sm"
+              class="tw-border tw-border-border-base tw-rounded-lg tw-p-4 tw-bg-background-alt tw-shadow-sm"
             >
               <div class="tw-flex tw-items-center tw-gap-3 tw-mb-3">
                 <bit-icon-tile icon="bwi-id-card" variant="primary" size="base"></bit-icon-tile>
-                <h3 class="tw-font-semibold tw-truncate">{{ cipher.name | async }}</h3>
+                <h3 class="tw-font-semibold tw-truncate tw-text-text-main">{{ cipher.name }}</h3>
               </div>
-              <div class="tw-text-sm tw-text-secondary-600 tw-space-y-1">
-                <p><strong>CNPJ:</strong> {{ cipher.login?.username | async }}</p>
-                <p><strong>Vencimento:</strong> {{ getVencimento(cipher) | async }}</p>
+              <div class="tw-text-sm tw-text-text-muted tw-space-y-1">
+                <p>
+                  <strong>{{ "cnpj" | i18n }}:</strong> {{ cipher.login?.username }}
+                </p>
+                <p>
+                  <strong>{{ "expiration" | i18n }}:</strong> {{ getVencimento(cipher) }}
+                </p>
               </div>
             </div>
           }
@@ -60,39 +75,38 @@ import { firstValueFrom } from "rxjs";
 export class CertificadosA1Component implements OnInit {
   private readonly dialogService = inject(DialogService);
   private readonly cipherService = inject(CipherService);
-  private readonly cipherFileUploadService = inject(CipherFileUploadService);
+  private readonly accountService = inject(AccountService);
   private readonly toastService = inject(ToastService);
+  private readonly i18nService = inject(I18nService);
 
-  ciphers = signal<Cipher[]>([]);
+  readonly ciphers = signal<CipherView[]>([]);
 
-  ngOnInit() {
-    this.loadCiphers();
+  ngOnInit(): void {
+    void this.loadCiphers();
   }
 
-  async loadCiphers() {
+  async loadCiphers(): Promise<void> {
     try {
-      const allCiphers = await firstValueFrom(this.cipherService.ciphers$);
-      const certificados = [];
-      for (const cipher of allCiphers) {
-        if (cipher.fields && cipher.fields.length > 0) {
-          const typeField = cipher.fields.find((f) => f.name === "_tipo");
-          if (typeField && (await typeField.value) === "certificado_a1") {
-            certificados.push(cipher);
-          }
-        }
+      const activeUserId = await firstValueFrom(this.accountService.activeAccount$.pipe(getUserId));
+      if (!activeUserId) {
+        return;
       }
+      const allCiphers = await firstValueFrom(this.cipherService.cipherViews$(activeUserId));
+      const certificados = allCiphers.filter((cipher) =>
+        cipher.fields?.some((f) => f.name === "_tipo" && f.value === "certificado_a1"),
+      );
       this.ciphers.set(certificados);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      // Avoid logging sensitive vault errors
     }
   }
 
-  async getVencimento(cipher: Cipher): Promise<string> {
+  getVencimento(cipher: CipherView): string {
     const field = cipher.fields?.find((f) => f.name === "Vencimento");
-    return field ? await field.value : "";
+    return field?.value ?? "";
   }
 
-  async openAddModal() {
+  async openAddModal(): Promise<void> {
     const dialogRef = this.dialogService.open(CertificadoA1UploadComponent);
     const result = await firstValueFrom(dialogRef.closed);
 
@@ -101,44 +115,57 @@ export class CertificadosA1Component implements OnInit {
     }
   }
 
-  async saveCertificado(file: File, password: string, data: any) {
+  async saveCertificado(
+    file: File,
+    password: string,
+    data: { subjectName: string; cnpj: string; notAfter: Date },
+  ): Promise<void> {
     try {
-      const cipher = new Cipher();
-      cipher.type = CipherType.Login;
-      cipher.name = data.subjectName;
+      const activeUserId = await firstValueFrom(this.accountService.activeAccount$.pipe(getUserId));
+      if (!activeUserId) {
+        return;
+      }
 
-      cipher.login = new Login();
-      cipher.login.username = data.cnpj;
-      cipher.login.password = password;
+      const cipherView = new CipherView();
+      cipherView.type = CipherType.Login;
+      cipherView.name = data.subjectName;
+      cipherView.login.username = data.cnpj;
+      cipherView.login.password = password;
 
       const vencimentoDate = new Date(data.notAfter);
       const vencimentoStr = vencimentoDate.toLocaleDateString("pt-BR");
 
-      cipher.fields = [
-        new Field("Vencimento", vencimentoStr, FieldType.Text),
-        new Field("_tipo", "certificado_a1", FieldType.Hidden),
-      ];
+      const vencimentoField = new FieldView();
+      vencimentoField.name = "Vencimento";
+      vencimentoField.value = vencimentoStr;
+      vencimentoField.type = FieldType.Text;
 
-      // Save item
-      const savedCipher = await this.cipherService.save(cipher);
+      const tipoField = new FieldView();
+      tipoField.name = "_tipo";
+      tipoField.value = "certificado_a1";
+      tipoField.type = FieldType.Hidden;
+
+      cipherView.fields = [vencimentoField, tipoField];
+
+      const savedCipher = await this.cipherService.createWithServer(cipherView, activeUserId);
 
       if (savedCipher && savedCipher.id) {
-        // Attach file
-        await this.cipherFileUploadService.upload(savedCipher.id, file);
+        const cipherDomain = await this.cipherService.get(savedCipher.id, activeUserId);
+        await this.cipherService.saveAttachmentWithServer(cipherDomain, file, activeUserId, false);
+
         this.toastService.showToast({
-          title: "Sucesso",
-          message: "Certificado A1 salvo com sucesso!",
+          title: this.i18nService.t("certificadosA1"),
+          message: this.i18nService.t("certificateSavedSuccess"),
           variant: "success",
         });
-        this.loadCiphers();
+        await this.loadCiphers();
       }
-    } catch (e) {
+    } catch {
       this.toastService.showToast({
-        title: "Erro",
-        message: "Erro ao salvar certificado.",
+        title: this.i18nService.t("errorOccurred"),
+        message: this.i18nService.t("errorSavingCertificate"),
         variant: "error",
       });
-      console.error(e);
     }
   }
 }
