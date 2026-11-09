@@ -21102,5 +21102,62 @@
         "example": "<a><code>1a2b3c4d</code></a>"
       }
     }
+  },
+  "typeCertificadoA1Plural": {
+    "message": "A1 Certificates"
+  },
+  "certificadosA1": {
+    "message": "A1 Certificates"
+  },
+  "addCertificadoA1": {
+    "message": "Add A1 Certificate"
+  },
+  "noCertificadosA1": {
+    "message": "No A1 certificates registered."
+  },
+  "cnpj": {
+    "message": "CNPJ"
+  },
+  "expiration": {
+    "message": "Expiration"
+  },
+  "dragAndDropPfx": {
+    "message": "Drag and drop the .pfx file here or click to select"
+  },
+  "certificatePassword": {
+    "message": "Certificate Password"
+  },
+  "enterPassword": {
+    "message": "Enter password"
+  },
+  "validatingCertificate": {
+    "message": "Validating certificate..."
+  },
+  "validCertificate": {
+    "message": "Valid Certificate!"
+  },
+  "company": {
+    "message": "Company"
+  },
+  "expiresOn": {
+    "message": "Expires on"
+  },
+  "validateAndSave": {
+    "message": "Validate and Save"
+  },
+  "saveCertificate": {
+    "message": "Save Certificate"
+  },
+  "fileExceedsLimit": {
+    "message": "The file exceeds the 500KB limit."
+  },
+  "invalidPasswordOrFile": {
+    "message": "Incorrect password or invalid file."
+  },
+  "certificateSavedSuccess": {
+    "message": "A1 Certificate saved successfully!"
+  },
+  "errorSavingCertificate": {
+    "message": "Error saving certificate."
   }
 }
