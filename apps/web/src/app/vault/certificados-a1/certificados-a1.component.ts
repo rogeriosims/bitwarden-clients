@@ -19,7 +19,10 @@ import {
 } from "@bitwarden/components";
 import { I18nPipe } from "@bitwarden/ui-common";
 
-import { CertificadoA1UploadComponent } from "./certificado-a1-upload.component";
+import {
+  CertificadoA1UploadComponent,
+  CertificadoA1UploadResult,
+} from "./certificado-a1-upload.component";
 
 @Component({
   selector: "app-certificados-a1",
@@ -108,7 +111,9 @@ export class CertificadosA1Component implements OnInit {
 
   async openAddModal(): Promise<void> {
     const dialogRef = this.dialogService.open(CertificadoA1UploadComponent);
-    const result = await firstValueFrom(dialogRef.closed);
+    const result = (await firstValueFrom(dialogRef.closed)) as
+      | CertificadoA1UploadResult
+      | undefined;
 
     if (result && result.file && result.data && result.password) {
       await this.saveCertificado(result.file, result.password, result.data);

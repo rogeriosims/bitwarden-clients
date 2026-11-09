@@ -5,10 +5,10 @@ import * as forge from "node-forge";
 
 import { I18nService } from "@bitwarden/common/platform/abstractions/i18n.service";
 import {
+  BitInputDirective,
   ButtonModule,
   DialogModule,
   DialogRef,
-  InputDirective,
   ToastService,
 } from "@bitwarden/components";
 import { I18nPipe } from "@bitwarden/ui-common";
@@ -124,7 +124,7 @@ export interface CertificadoA1UploadResult {
     DialogModule,
     ButtonModule,
     I18nPipe,
-    InputDirective,
+    BitInputDirective,
   ],
 })
 export class CertificadoA1UploadComponent {
@@ -179,11 +179,12 @@ export class CertificadoA1UploadComponent {
       return;
     }
 
-    if (this.extractedData()) {
+    const extracted = this.extractedData();
+    if (extracted) {
       this.dialogRef.close({
         file,
         password,
-        data: this.extractedData(),
+        data: extracted,
       } satisfies CertificadoA1UploadResult);
       return;
     }
